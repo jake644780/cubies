@@ -1,0 +1,40 @@
+@use '../../global.scss' as *;
+
+.content{
+    width: 100vw;
+    height: 90vh;
+
+    @include center;
+
+    .container{
+        @include align(column, center, center);
+        border-radius: 5px;
+        width: 40vw;
+        height: 50vh;
+
+        background-color: rgba($color: $blanco, $alpha: 0.5);
+
+        *{
+            @include border;
+            @include align(row, center, start);
+            width: 50%;
+            height: 10%;
+
+        }
+
+        .title{
+            @include align(row, center, center);
+            width: 80%;
+            height: 30%;
+        
+            @include respoText(2);
+
+        }
+    }
+
+    .title{
+        color: $negro;
+        font-weight: bold;
+
+    }
+}

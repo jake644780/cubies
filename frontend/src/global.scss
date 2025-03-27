@@ -1,0 +1,67 @@
+//mixins
+@mixin align($direction: row, $align: center, $justify: center){
+    display: flex;
+    flex-direction: $direction;
+    align-items: $align;
+    justify-content: $justify;
+}
+
+@mixin border{
+    border: solid black 2px
+}
+
+@mixin center($text: null){
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    @if $text != null{
+        text-align: $text;
+    }
+}
+
+@mixin hundert{
+    width: 100%;
+    height: 100%;
+}
+
+@mixin oneImage{
+    background-size: cover; /* Ensures the image covers the entire hero */
+    background-position: center; /* Centers the image */
+    background-repeat: no-repeat; /* Prevents tiling */
+}
+
+@mixin respoText($number: 2) {
+    font-size: #{$number}vw;
+    @media (max-width: $mid) {
+        font-size: #{$number + 2}vw;
+    }
+    @media (max-width: $big) {
+        font-size: #{$number + 1}vw;
+    }
+}
+
+// colors
+$azul: #002642;
+$amarillo: #e59500;
+$negro: #02040F;
+$rojo: #840032;
+$blanco: whitesmoke;
+//sizes
+$mid: 768px;
+$big: 900px;
+
+
+//general stykes
+body{
+    margin: 0;
+    padding: 0;
+    background-color: $negro;      
+    color: $amarillo;
+}
+
+
+*{
+    box-sizing: border-box;
+    font-family: 'Courier New', Courier, monospace;
+}
