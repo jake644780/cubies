@@ -1,6 +1,8 @@
 package main
 
 import (
+	"backend/models"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -10,13 +12,13 @@ import (
 )
 
 var (
-	clients   = make(map[*websocket.Conn]bool) // Active clients
+	clients   = make(map[*websocket.Conn]*models.Player) // Active clients
+	usernames = make(map[string]*models.Player)
 	broadcast = make(chan string)              // Channel for broadcasting messages
 	upgrader  = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool {return true /* Allow all origins (for testing)*/},}
 	mu sync.Mutex // Mutex for safe concurrent access
 )
 
-// WebSocket handler
 func handleWebSocket(c *gin.Context) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -25,13 +27,49 @@ func handleWebSocket(c *gin.Context) {
 	}
 	defer conn.Close()
 
-	// Add new client
+	// Initially, awaiting the username
+	var player *models.Player
+
+	// Read the first message to set the username
+	_, msg, err := conn.ReadMessage()
+	if err != nil {
+		fmt.Println("Error reading message:", err)
+		return
+	}
+
+	// Unmarshal the incoming JSON message
+	var setUsernameMessage models.SetUsernameMessage
+	err = json.Unmarshal(msg, &setUsernameMessage)
+	if err != nil {
+		fmt.Println("Error unmarshalling message:", err)
+		return
+	}
+
+	// Check if the username already exists
 	mu.Lock()
-	clients[conn] = true
+	if existingPlayer, exists := usernames[setUsernameMessage.SetUsername]; exists {
+		// Username exists, respond to the client
+		conn.WriteMessage(websocket.TextMessage, []byte("Username '" + setUsernameMessage.SetUsername + "' is already taken."))
+		player = existingPlayer
+	} else {
+		// Username doesn't exist, create a new player
+		player = &models.Player{Username: setUsernameMessage.SetUsername}
+
+		// Store player in the clients map
+		clients[conn] = player
+		
+		// Store player's address in the usernames map
+		usernames[setUsernameMessage.SetUsername] = player
+		
+		// Send confirmation message to the client
+		conn.WriteMessage(websocket.TextMessage, []byte("Username set to '" + setUsernameMessage.SetUsername + "'"))
+	}
 	mu.Unlock()
 
-	fmt.Println("New client connected")
+	// Now, proceed with normal game logic
+	fmt.Println("User", player.Username, "connected")
 
+	// Start listening for messages after the username is set
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -39,18 +77,21 @@ func handleWebSocket(c *gin.Context) {
 			break
 		}
 
+		// Print the received message
 		fmt.Printf("Received: %s\n", msg)
 
+		// Get the player's username from the clients map
+		namedMsg := fmt.Sprintf("%v said: %s", player.Username, msg)
+
 		// Send an acknowledgment or custom response to the sender
-		response := fmt.Sprintf("Server: You said '%s'", msg)
-		err = conn.WriteMessage(websocket.TextMessage, []byte(response))
+		err = conn.WriteMessage(websocket.TextMessage, []byte("Server: You said '" + string(msg) + "'"))
 		if err != nil {
 			fmt.Println("Error responding to client:", err)
 			break
 		}
 
 		// Broadcast the message to all clients
-		broadcast <- string(msg)
+		broadcast <- namedMsg
 	}
 
 	// Remove disconnected client
@@ -59,6 +100,8 @@ func handleWebSocket(c *gin.Context) {
 	mu.Unlock()
 }
 
+
+
 // Broadcast messages to all connected clients
 func handleMessages() {
 	for {
@@ -66,7 +109,7 @@ func handleMessages() {
 
 		mu.Lock()
 		for conn := range clients {
-			err := conn.WriteMessage(websocket.TextMessage, []byte("Broadcast: "+msg))
+			err := conn.WriteMessage(websocket.TextMessage, []byte(msg))
 			if err != nil {
 				fmt.Println("Error sending message:", err)
 				conn.Close()
@@ -81,9 +124,7 @@ func main() {
 	r := gin.Default()
 
 	// WebSocket endpoint
-	r.GET("/ws", func(c *gin.Context) {
-		handleWebSocket(c)
-	})
+	r.GET("/ws", handleWebSocket)
 
 	// Start message broadcasting
 	go handleMessages()

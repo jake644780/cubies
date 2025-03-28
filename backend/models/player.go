@@ -1,12 +1,23 @@
 package models
 
-import "github.com/gorilla/websocket"
 
 type Player struct {
+	//general
+	Username string
+	InGame bool
+	GameId int
 	Hand   []Card
 	Deck   []Card
 	Health int
-	Conn *websocket.Conn
-	InGame bool
-	GameId int
+}
+
+func MakePlayer() Player{
+	return Player{
+		Username: "",
+		InGame: false,
+		GameId: 0,
+		Hand: []Card{},
+		Deck: []Card{},
+		Health: 0,
+	}
 }

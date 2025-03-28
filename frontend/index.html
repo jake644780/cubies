@@ -12,38 +12,77 @@
   </body>
 </html>
 <script type="module" src="/src/main.jsx"></script>
+<h2>WebSocket Chat</h2>
 
-    <h2>WebSocket Chat</h2>
-    <input type="text" id="messageInput" placeholder="Type a message...">
+<!-- Username Input Section -->
+<div id="usernameSection">
+    <input type="text" id="usernameInput" placeholder="Enter your username" />
+    <button onclick="setUsername()">Set Username</button>
+    <p id="usernameStatus"></p>
+</div>
+
+<!-- Chat Section -->
+<div id="chatSection" style="display: none;">
+    <input type="text" id="messageInput" placeholder="Type a message..." />
     <button onclick="sendMessage()">Send</button>
     <ul id="messages"></ul>
+</div>
 
-    <script>
-        const socket = new WebSocket("ws://localhost:8080/ws");
+<script>
+    const socket = new WebSocket("ws://localhost:8080/ws");
 
-        socket.onopen = () => {
-            console.log("Connected to WebSocket server");
-        };
+    socket.onopen = () => {
+        console.log("Connected to WebSocket server");
+    };
 
-        socket.onmessage = (event) => {
-            console.log("Message from server:", event.data);
-            const li = document.createElement("li");
-            li.textContent = "Server: " + event.data;
-            document.getElementById("messages").appendChild(li);
-        };
+    socket.onmessage = (event) => {
+        console.log("Message from server:", event.data);
 
-        socket.onclose = () => {
-            console.log("Disconnected from WebSocket server");
-        };
+        // Display the server's response
+        const li = document.createElement("li");
+        li.textContent = event.data;
+        document.getElementById("messages").appendChild(li);
 
-        function sendMessage() {
-            const input = document.getElementById("messageInput");
-            const message = input.value;
+        // If the username is set successfully, show the chat UI
+        if (event.data.includes("Username set to")) {
+            document.getElementById("usernameSection").style.display = "none";
+            document.getElementById("chatSection").style.display = "block";
+        }
+    };
+
+    socket.onclose = () => {
+        console.log("Disconnected from WebSocket server");
+    };
+
+    // Set the username
+    function setUsername() {
+        const username = document.getElementById("usernameInput").value.trim();
+        if (!username) {
+            alert("Please enter a username.");
+            return;
+        }
+
+        const message = JSON.stringify({ setUsername: username });
+        socket.send(message);
+
+        // Disable the input and button after setting the username
+        document.getElementById("usernameInput").disabled = true;
+        document.querySelector("button[onclick='setUsername()']").disabled = true;
+        document.getElementById("usernameStatus").textContent = "Setting username...";
+    }
+
+    // Send a message to the WebSocket server
+    function sendMessage() {
+        const input = document.getElementById("messageInput");
+        const message = input.value.trim();
+        if (message) {
             socket.send(message);
             input.value = "";
 
+            // Display the user's message in the chat
             const li = document.createElement("li");
             li.textContent = "You: " + message;
             document.getElementById("messages").appendChild(li);
         }
-    </script>
+    }
+</script>
