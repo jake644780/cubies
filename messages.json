@@ -1,0 +1,32 @@
+{
+    "setusername":{
+        "id":"sun",
+        "username": "string",
+        "desc":"user tries to set username, it will be registered if not taken, not if it is taken"
+    },
+    "challengePlayer":{
+        "id":"chp",
+        "challenged's name": "string",
+        "desc":"probably just a lookup for a player"
+    },
+    "accept challenge":{
+        "id":"ach",
+        "recipient's name": "string",
+        "desc": "an ack for a challenge, and inits a new game"
+    },
+    "play card":{
+        "id":"pyc",
+        "card id": "int",
+        "lane num":"int",
+        "target": "lane num, only if it is a spell"
+    },
+    "set deck":{
+        "id":"sdk",
+        "cards": "list of ids as an int[]"
+    },
+    "emote":{
+        "id":"emo",
+        "emote id":"int"
+    }
+}
+
